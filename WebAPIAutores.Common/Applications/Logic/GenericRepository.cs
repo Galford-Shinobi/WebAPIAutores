@@ -1,4 +1,6 @@
-﻿using WebAPIAutores.Common.Applications.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
+using WebAPIAutores.Common.Applications.Interfaces;
 using WebAPIAutores.Common.DataBase;
 using WebAPIAutores.Common.Entities;
 using WebAPIAutores.Common.Responses;
@@ -14,84 +16,135 @@ namespace WebAPIAutores.Common.Applications.Logic
             _applicationDbContext = applicationDbContext;
         }
 
-        public Task<GenericResponse<TEntity>> AddAsync(TEntity entity)
+        public async Task<GenericResponse<TEntity>> AddAsync(TEntity entity)
         {
             try
             {
-
+                _applicationDbContext.Set<TEntity>().Add(entity);
+                if (!await SaveAllAsync()) 
+                {
+                    return new GenericResponse<TEntity> {
+                        IsSuccess = false,
+                        ErrorMessage = "problems with registration"
+                    };
+                }
+                return new GenericResponse<TEntity>
+                {
+                    IsSuccess = true,
+                };
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-
-                throw;
+                return new GenericResponse<TEntity>
+                {
+                    IsSuccess = false,
+                    ErrorMessage = exception.Message,
+                };
             }
-            throw new NotImplementedException();
         }
 
         public void AddEntity(TEntity Entity)
         {
-            throw new NotImplementedException();
+            _applicationDbContext.Set<TEntity>().Add(Entity);
+            _applicationDbContext.SaveChanges();
         }
 
         public void DeleteEntity(TEntity Entity)
         {
-            throw new NotImplementedException();
+            _applicationDbContext.Set<TEntity>().Remove(Entity);
+            _applicationDbContext.SaveChanges();
         }
 
-        public Task<IReadOnlyList<TEntity>> GetAllAsync()
+        public async Task<IReadOnlyList<TEntity>> GetAllAsync()
         {
             try
             {
-
+                return  await _applicationDbContext.Set<TEntity>().ToListAsync();
             }
             catch (Exception)
             {
-
-                throw;
+                return null;
             }
-            throw new NotImplementedException();
         }
 
-        public Task<GenericResponse<TEntity>> GetByIdAsync(int id)
+        public async Task<GenericResponse<TEntity>> GetByIdAsync(int id)
         {
             try
             {
+                var ResultObject =  await _applicationDbContext.Set<TEntity>().FindAsync(id);
 
+                return new GenericResponse<TEntity> { 
+                    IsSuccess= true,
+                    Result = ResultObject,
+                };
             }
-            catch (Exception)
+            catch (DbUpdateException dbUpdateException) 
             {
-
-                throw;
+                if (dbUpdateException.InnerException.Message.Contains("duplicate"))
+                {
+                    return new GenericResponse<TEntity> { 
+                      IsSuccess= false,
+                      ErrorMessage= dbUpdateException.InnerException.Message,
+                    };
+                }
+                else
+                {
+                    return new GenericResponse<TEntity>
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = dbUpdateException.InnerException.Message,
+                    };
+                }
             }
-            throw new NotImplementedException();
+            catch (Exception exception)
+            {
+                return new GenericResponse<TEntity>
+                {
+                    IsSuccess = false,
+                    ErrorMessage = exception.InnerException.Message,
+                };
+            }
         }
 
-        public Task<GenericResponse<TEntity>> UpdateAsync(TEntity entity)
+        public async Task<GenericResponse<TEntity>> UpdateAsync(TEntity entity)
         {
             try
             {
-
+                _applicationDbContext.Set<TEntity>().Update(entity);
+                if (!await SaveAllAsync())
+                {
+                    return new GenericResponse<TEntity>
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = "problems with registration"
+                    };
+                }
+                return new GenericResponse<TEntity>
+                {
+                    IsSuccess = true,
+                };
             }
-            catch (Exception)
+            catch (Exception exception)
             {
 
-                throw;
+                return new GenericResponse<TEntity>
+                {
+                    IsSuccess = false,
+                    ErrorMessage = exception.Message,
+                }; ;
             }
-            throw new NotImplementedException();
         }
 
         public void UpdateEntity(TEntity Entity)
         {
             try
             {
-
+                _applicationDbContext.Set<TEntity>().Update(Entity);
+                _applicationDbContext.SaveChanges();
             }
             catch (Exception)
             {
-
-                throw;
             }
-            throw new NotImplementedException();
         }
 
         private async Task<bool> SaveAllAsync()

@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
+using WebAPIAutores.Common.Applications.Interfaces;
+using WebAPIAutores.Common.Applications.Logic;
 using WebAPIAutores.Common.DataBase;
 
 namespace WebAPIAutores
@@ -19,9 +21,12 @@ namespace WebAPIAutores
         {
             // Add services to the container.
 
-            services.AddControllers();
+            services.AddControllers()
+                .AddNewtonsoftJson();
             services.AddDbContext<ApplicationDbContext>(options =>
                options.UseSqlServer(Configuration.GetConnectionString("defaultConnection")));
+
+            services.AddScoped<IAuthorRepository, AuthorRepository>();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             //services.AddEndpointsApiExplorer();
